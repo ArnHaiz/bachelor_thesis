@@ -2,6 +2,7 @@ import calendar
 import json
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+from time import sleep
 
 import CST
 from Search import search
@@ -40,6 +41,7 @@ def get_from_servers(servers, current_date, start_date=None, end_date=None):
     results = [defaultdict(list)] * len(servers)
 
     for date in range(count_months(start_date, end_date)):
+        sleep(1) # not required for functionality, but this is to ensure to not overload the servers, per request of most mass data collection APIs
         for j in range(len(servers)):
             results[j][date] = serverIndex_to_function[j](server=servers[j], s_date=s_date, e_date=e_date, current_time=current_date)
         

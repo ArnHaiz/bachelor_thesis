@@ -12,11 +12,11 @@ def get_interval(start_date, end_date):
     """
     nbr_month = count_months(start_date, end_date)
     splitted = split_date(start_date)
-    sy = splitted[0]; sm = splitted[1]
+    sy = int(splitted[0]); sm = int(splitted[1])
 
-    date_list = [] * nbr_month
+    date_list = [None] * nbr_month
 
-    for i in range(count_months(start_date, end_date)):
+    for i in range(nbr_month):
         date = str(sy + (sm+i-1) // MONTH_IN_YEAR) + '-' + str(1 + (sm + i - 1) % MONTH_IN_YEAR).zfill(2)
         date_list[i] = date
 

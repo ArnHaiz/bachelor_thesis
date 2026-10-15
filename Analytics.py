@@ -1,6 +1,7 @@
 from collections import defaultdict
 
-from DateCounting import split_date, count_months
+from interval import get_interval
+from DateCounting import count_months
 
 
 MONTH_IN_YEAR = 12
@@ -22,11 +23,12 @@ def make_stats(words : list[str], data : list[defaultdict], s_date, e_date):
     word_count_per_month = defaultdict(int)
     paper_count_per_month = defaultdict(list)
 
-    months = count_months(s_date, e_date)
+    nbr_month = count_months(s_date, e_date)
+    months = get_interval(s_date, e_date)
 
     nbr_paper = sum(len(a) for a in agg_data.values())
 
-    for i in range(months):
+    for i in range(nbr_month):
         date = months[i]
 
         # TODO problem is that d[date] isn't necessarly initialised, so it crashes.
