@@ -7,13 +7,13 @@ def split_date(date: str):
     :return: 2, respectively 3, strings containing the year, month and potentially day in that order 
     """
     if len(date) == 7:
-        return date[:4], date[5:]
+        return [date[:4], date[5:]]
     elif len(date) == 10:
-        return date[:4], date[5:7], date[8:]
+        return [date[:4], date[5:7], date[8:]]
 
 def count_months(sd, ed):
-    (sy, sm := split_date(sd)) if len(sd) == 7 else (sy, sm, _ := split_date(sd))
-    (ey, em := split_date(ed)) if len(ed) == 7 else (ey, em, _ := split_date(ed))
+    s_splitted = split_date(sd); e_splitted = split_date(ed)
+    sy = s_splitted[0]; sm = s_splitted[1]; ey = e_splitted[0]; em = e_splitted[1]
 
     return (int(ey) - int(sy)) * 12 + int(em) - int(sm)
     #e_year - s_year + e_month - s_month

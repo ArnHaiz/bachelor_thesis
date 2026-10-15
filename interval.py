@@ -11,7 +11,8 @@ def get_interval(start_date, end_date):
     :return: an array of strings whose elements are, in order, the months in the interval
     """
     nbr_month = count_months(start_date, end_date)
-    sy, sm = split_date(start_date)
+    splitted = split_date(start_date)
+    sy = splitted[0]; sm = splitted[1]
 
     date_list = [] * nbr_month
 

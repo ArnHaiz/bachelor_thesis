@@ -29,7 +29,8 @@ def get_from_servers(servers, current_date, start_date=None, end_date=None):
     serverIndex_to_function = {0: get_from_biorxiv, 1: get_from_medrxiv, 2: get_from_arxiv} # TODO maybe clarify in a "how to change code" file that this is here
 
     if not (start_date == None or end_date == None):
-        e_year, e_month = split_date(end_date)
+        splitted = split_date(end_date)
+        e_year = splitted[0]; e_month = splitted[1]
         s_date = start_date + '-01'
         if end_date == current_date[:7]:
             e_date = current_date
