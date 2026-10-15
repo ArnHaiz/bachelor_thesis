@@ -12,8 +12,8 @@ def split_date(date: str):
         return date[:4], date[5:7], date[8:]
 
 def count_months(sd, ed):
-    sy, sm = split_date(sd) if len(sd) == 7 else sy, sm, _ = split_date(sd)
-    ey, em = split_date(ed) if len(ed) == 7 else ey, em, _ = split_date(ed)
+    (sy, sm := split_date(sd)) if len(sd) == 7 else (sy, sm, _ := split_date(sd))
+    (ey, em := split_date(ed)) if len(ed) == 7 else (ey, em, _ := split_date(ed))
 
     return (int(ey) - int(sy)) * 12 + int(em) - int(sm)
     #e_year - s_year + e_month - s_month
