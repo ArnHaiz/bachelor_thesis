@@ -26,8 +26,6 @@ def make_stats(words : list[str], data : list[defaultdict], s_date, e_date):
     nbr_month = count_months(s_date, e_date)
     months = get_interval(s_date, e_date)
 
-    nbr_paper = sum(len(a) for a in agg_data.values())
-
     for i in range(nbr_month):
         date = months[i]
 
@@ -43,6 +41,8 @@ def make_stats(words : list[str], data : list[defaultdict], s_date, e_date):
 
         word_count_per_month[date] = sum([s.count(words[j]) for j in range(len(words))] for s in agg_data[date])
         paper_count_per_month[date] = sum(sum(words[j] in d for d in agg_data[date]) for j in range(len(words)))
+
+    nbr_paper = sum(len(a) for a in agg_data.values())
 
 
     return [nbr_paper, dict(word_count_per_month), dict(paper_count_per_month)]

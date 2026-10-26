@@ -38,12 +38,13 @@ def get_from_servers(servers, current_date, start_date=None, end_date=None):
         else:
             e_date = end_date + '-' + str(calendar.monthrange(e_year, e_month)[1])
 
-    results = [defaultdict(list)] * len(servers)
+    results = [defaultdict(list) for _ in servers]
+    interval = get_interval()
 
-    for date in range(count_months(start_date, end_date)):
+    for i in range(count_months(start_date, end_date) - 1):
         sleep(1) # not required for functionality, but this is to ensure to not overload the servers, per request of most mass data collection APIs
         for j in range(len(servers)):
-            results[j][date] = serverIndex_to_function[j](server=servers[j], s_date=s_date, e_date=e_date, current_time=current_date)
+            results[j][interval[i]] = serverIndex_to_function[j](server=servers[j], s_date=interval[i], e_date=interval[i+1], current_time=current_date)
         
     print('End of data collection.')
     return results
