@@ -3,10 +3,12 @@ import json
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from time import sleep
+from month_range import Month, MonthRange
 
 import CST
 from Search import search
 from DateCounting import split_date, count_months
+from interval import get_interval
 
 
 is_usable = lambda license: not license in CST.unusable_licenses
@@ -15,7 +17,7 @@ namespace = {'ns': 'http://www.openarchives.org/OAI/2.0/'}
 
 
 
-def get_from_servers(servers, current_date, start_date=None, end_date=None):
+def get_from_servers(servers, current_date, start_date, end_date):
     """ 
     collect data according to the arguments from the given servers one after the other.
     
@@ -29,24 +31,24 @@ def get_from_servers(servers, current_date, start_date=None, end_date=None):
     print("Start of data collection...")
     serverIndex_to_function = {0: get_from_biorxiv, 1: get_from_medrxiv, 2: get_from_arxiv} # TODO maybe clarify in a "how to change code" file that this is here
 
-    if not (start_date == None or end_date == None):
-        splitted = split_date(end_date)
-        e_year = splitted[0]; e_month = splitted[1]
-        s_date = start_date + '-01'
-        if end_date == current_date[:7]:
-            e_date = current_date
-        else:
-            e_date = end_date + '-' + str(calendar.monthrange(e_year, e_month)[1])
-
+    interval = MonthRange.parse([start_date, end_date]).split()
     results = [defaultdict(list) for _ in servers]
-    interval = get_interval()
+    nbr_months = len(interval)
 
-    for i in range(count_months(start_date, end_date) - 1):
-        sleep(1) # not required for functionality, but this is to ensure to not overload the servers, per request of most mass data collection APIs
+    for i in range(nbr_months):
+        print(f"{100 * i / nbr_months:.2f}%")
+
+        m = interval[i]
+        s_date = m.first_day.isoformat()
+        e_date = m.last_day.isoformat()
+        print(s_date, 'to', e_date)
         for j in range(len(servers)):
-            results[j][interval[i]] = serverIndex_to_function[j](server=servers[j], s_date=interval[i], e_date=interval[i+1], current_time=current_date)
+            results[j][str(m)] = serverIndex_to_function[j](server=servers[j], s_date=s_date, e_date=e_date, current_time=current_date)
         
-    print('End of data collection.')
+        # not required for functionality, but this is to ensure to not overload the servers, per request of most mass data collection APIs
+        sleep(1.5)
+        
+    print(f'100% - End of data collection.')
     return results
 
 
@@ -66,8 +68,8 @@ def get_from_biorxiv(*, server, s_date, e_date, current_time, subject=None, curs
     :return: a defaultdict(list) with the abstracts accessible by year and month
     """
 
-    s_date = f"/{s_date}" if s_date != None else f"/{CST.BIORXIV_START_DATE}"
-    e_date = f"/{e_date}" if e_date != None else f"/{current_time}"
+    s_date = f"/{s_date}"
+    e_date = f"/{e_date}"
     interval = s_date + e_date
     subject = f"?category={subject}" if subject != "" else ""
     cursor = f"/{cursor}"
@@ -82,15 +84,20 @@ def get_from_biorxiv(*, server, s_date, e_date, current_time, subject=None, curs
     abstracts = []
     year_months = []
     results = defaultdict(list)
-    dic = json.loads(r)['collection']
 
-    for paper in dic:
-        if is_usable(paper['license']):
-            abstracts.append(paper['abstract'])
-            year_months.append(paper['date'][:7])
+    try:
+        dic = json.loads(r)['collection']
 
-    for y in year_months:
-            results[y] = [abstracts[i] for i, x in enumerate(year_months) if x == y]
+        for paper in dic:
+            if is_usable(paper['license']):
+                abstracts.append(paper['abstract'])
+                year_months.append(paper['date'][:7])
+
+        for y in year_months:
+                results[y] = [abstracts[i] for i, x in enumerate(year_months) if x == y]
+    except:
+        print("Failed to extract data from BioRxiv.")
+        return None
 
     return results
 
@@ -111,8 +118,8 @@ def get_from_medrxiv(*, server, s_date, e_date, current_time, subject=None, curs
     :return: a defaultdict(list) with the abstracts accessible by year and month
     """
 
-    s_date = f"/{s_date}" if s_date != None else f"/{CST.MEDRXIV_START_DATE}"
-    e_date = f"/{e_date}" if e_date != None else f"/{current_time}"
+    s_date = f"/{s_date}"
+    e_date = f"/{e_date}"
     interval = s_date + e_date
     subject = f"?category={subject}" if subject != None else ""
     cursor = f"/{cursor}"
@@ -126,15 +133,19 @@ def get_from_medrxiv(*, server, s_date, e_date, current_time, subject=None, curs
     abstracts = []
     year_months = []
     results = defaultdict(list)
-    dic = json.loads(r)['collection']
+    try:
+        dic = json.loads(r)['collection']
 
-    for paper in dic:
-        if is_usable(paper['license']):
-            abstracts.append(paper['abstract'])
-            year_months.append(paper['date'][:7])
+        for paper in dic:
+            if is_usable(paper['license']):
+                abstracts.append(paper['abstract'])
+                year_months.append(paper['date'][:7])
 
-    for y in year_months:
-            results[y] = [abstracts[i] for i, x in enumerate(year_months) if x == y]
+        for y in year_months:
+                results[y] = [abstracts[i] for i, x in enumerate(year_months) if x == y]
+    except:
+        print("Failed to extract data from MedRxiv.")
+        return None
 
     return results
 
@@ -156,8 +167,8 @@ def get_from_arxiv(*, server, s_date=None, e_date=None, subject=None, cursor=0, 
     """
 
     if not (s_date == None or e_date == None):
-        s_date = f"&from={s_date}" if s_date is not None else CST.STANDARD_START_DATE[:7]
-        e_date = f"&until={e_date}" if e_date is not None else current_time[:7]
+        s_date = f"&from={s_date if s_date is not None else CST.STANDARD_START_DATE[:9]}"
+        e_date = f"&until={e_date if e_date is not None else current_time[:9]}"
 
 
     # set = f"&set={subject}" if subject is not None else ""
@@ -174,38 +185,42 @@ def get_from_arxiv(*, server, s_date=None, e_date=None, subject=None, cursor=0, 
     # max_ids_sim = 500
     # pdfs = []
 
-    root = ET.fromstring(r)
-    papers = root.find('ns:ListRecords', CST.arxiv_namespace).findall('ns:record', CST.arxiv_namespace)
+    try:
+        root = ET.fromstring(r)
+        papers = root.find('ns:ListRecords', CST.arxiv_namespace).findall('ns:record', CST.arxiv_namespace)
 
-    for paper in papers:
-        for elem in paper:
-            for e in elem.iter():
-                match e.tag.split('}', 1)[1]:
-                    case 'datestamp':
-                        year_months.append(e.text[:7])
-                    case 'license':
-                        if not is_usable(e.text):
-                            break
-                    case 'abstract':
-                        abstracts.append(e.text)
+        for paper in papers:
+            for elem in paper:
+                for e in elem.iter():
+                    match e.tag.split('}', 1)[1]:
+                        case 'datestamp':
+                            year_months.append(e.text[:7])
+                        case 'license':
+                            if not is_usable(e.text):
+                                break
+                        case 'abstract':
+                            abstracts.append(e.text)
 
-    # TODO if time available remove paper whilst sorting instead of going through all of them every time
-    for y in year_months:
-        results[y] = [abstracts[i] for i, x in enumerate(year_months) if x == y]
+        # TODO if time available remove paper whilst sorting instead of going through all of them every time
+        for y in year_months:
+            results[y] = [abstracts[i] for i, x in enumerate(year_months) if x == y]
 
-    # client = Client(page_size=max_ids_sim)
-    # r = client.results(search=Search(id_list=ids))
+        # client = Client(page_size=max_ids_sim)
+        # r = client.results(search=Search(id_list=ids))
 
 
-    # for p in r:
-    #     if not p.pdf_url is None:
-    #         try:
-    #             response = requests.get(p.pdf_url)
-    #             if response.status_code == '200':
-    #                 pdfs.append(response.text)
-    #         except ConnectionError:
-    #             print(f'failed to get file {p.title} at {p.pdf_url}')
-    #     else:
-    #         pdfs.append(p.summary)
+        # for p in r:
+        #     if not p.pdf_url is None:
+        #         try:
+        #             response = requests.get(p.pdf_url)
+        #             if response.status_code == '200':
+        #                 pdfs.append(response.text)
+        #         except ConnectionError:
+        #             print(f'failed to get file {p.title} at {p.pdf_url}')
+        #     else:
+        #         pdfs.append(p.summary)
+    except AttributeError:
+        print("Failed to extract data from ArXiv.")
+        return None
 
     return results

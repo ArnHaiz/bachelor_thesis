@@ -1,7 +1,5 @@
 from collections import defaultdict
-
-from interval import get_interval
-from DateCounting import count_months
+from month_range import Month, MonthRange
 
 
 MONTH_IN_YEAR = 12
@@ -23,15 +21,12 @@ def make_stats(words : list[str], data : list[defaultdict], s_date, e_date):
     word_count_per_month = defaultdict(int)
     paper_count_per_month = defaultdict(list)
 
-    nbr_month = count_months(s_date, e_date)
-    months = get_interval(s_date, e_date)
+    months = MonthRange.parse([s_date, e_date]).split()
+    nbr_month = len(months)
 
     for i in range(nbr_month):
-        date = months[i]
+        date = str(months[i])
 
-        # TODO problem is that d[date] isn't necessarly initialised, so it crashes.
-        # Either I find a solution to check if it exists in the dic here or I need to initialise each year-month before getting to this point.
-        # set(d[date] for d in data)
         date_data = []
         for d in data:
             if d.__contains__(date):

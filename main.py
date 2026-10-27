@@ -17,9 +17,9 @@ def start():
     then analysing and making statistics out of the data and finally visualising data.
     """
 
-    s_date, e_date = sys.argv[1:]
+    s_date, e_date = sys.argv[1:3]
     current_date = str(datetime.datetime.today()).split()[0]
-    print(current_date)
+    print(f"current day is {current_date}")
 
     if not (s_date == "None" or e_date == "None"):
         s_date = s_date[:7]
